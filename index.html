@@ -109,6 +109,7 @@
       const isDraggingRef = useRef(false);
       const lastYRef = useRef(0);
       const animFrameRef = useRef(null);
+      const lastDingIdxRef = useRef(-1);
       
       const itemHeight = 70;
       const extendedItems = [...items, ...items, ...items, ...items, ...items];
@@ -147,18 +148,36 @@
       };
 
       const momentumLoop = () => {
-        if (Math.abs(velocityRef.current) > 0.5) {
-          scrollRef.current += velocityRef.current;
-          velocityRef.current *= 0.95;
-          setOffset(scrollRef.current);
-          animFrameRef.current = requestAnimationFrame(momentumLoop);
-        } else {
-          const snapIndex = Math.round(scrollRef.current / itemHeight);
-          scrollRef.current = snapIndex * itemHeight;
-          setOffset(scrollRef.current);
-          playDing();
-          setSelectedIdx(snapIndex % items.length);
-        }
+         if (isDraggingRef.current) return;
+         
+         const snapIndex = Math.round(scrollRef.current / itemHeight);
+         const targetScroll = snapIndex * itemHeight;
+         const diff = targetScroll - scrollRef.current;
+         
+         let isAnimating = false;
+         
+         if (Math.abs(velocityRef.current) > 0.5) {
+            scrollRef.current += velocityRef.current;
+            velocityRef.current *= 0.95; // Friction
+            isAnimating = true;
+         } else if (Math.abs(diff) > 0.5) {
+            scrollRef.current += diff * 0.15; // Fluid snap magnetic pull
+            isAnimating = true;
+         }
+         
+         if (isAnimating) {
+            setOffset(scrollRef.current);
+            const currentIdx = Math.round(scrollRef.current / itemHeight);
+            if (currentIdx !== lastDingIdxRef.current) {
+               playDing();
+               lastDingIdxRef.current = currentIdx;
+            }
+            animFrameRef.current = requestAnimationFrame(momentumLoop);
+         } else {
+            scrollRef.current = targetScroll;
+            setOffset(scrollRef.current);
+            setSelectedIdx(snapIndex % items.length);
+         }
       };
 
       return (
@@ -168,13 +187,13 @@
              onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
              onMouseDown={handleTouchStart} onMouseMove={handleTouchMove} onMouseUp={handleTouchEnd} onMouseLeave={handleTouchEnd}
            >
-             <div className="absolute top-0 w-full h-[20%] bg-gradient-to-b from-black to-transparent z-10 pointer-events-none"></div>
-             <div className="absolute bottom-0 w-full h-[20%] bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
+             <div className="absolute top-0 w-full h-[30%] bg-gradient-to-b from-black to-transparent z-10 pointer-events-none"></div>
+             <div className="absolute bottom-0 w-full h-[30%] bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
              <div className="absolute top-1/2 left-0 w-full h-[70px] -mt-[35px] border-y-2 border-yellow-400 bg-yellow-400/10 z-0 pointer-events-none"></div>
 
-             <div className="absolute top-1/2 left-0 w-full transition-transform duration-75 ease-linear" style={{ transform: `translateY(calc(140px - ${offset}px))` }}>
+             <div className="absolute top-1/2 left-0 w-full duration-0" style={{ transform: `translateY(calc(140px - ${offset}px))` }}>
                {extendedItems.map((item, idx) => (
-                 <div key={idx} className="h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center">{item}</div>
+                 <div key={idx} className="h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center m-0 p-0 leading-none">{item}</div>
                ))}
              </div>
            </div>
@@ -192,39 +211,47 @@
 
     const CardGrid = ({ players, currentUser, state, isDarkMode }) => {
        const count = players.length;
-       let gridClass = "grid gap-3 w-full h-full max-w-3xl mx-auto " + (count <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2");
-       const cardBg = isDarkMode ? 'bg-black text-white border-gray-600' : 'bg-white text-black border-gray-300';
-       const wordColor = isDarkMode ? 'text-white' : 'text-black';
+       let gridClass = "grid gap-4 w-full h-full max-w-4xl mx-auto " + (count <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2");
+       
+       const cardBg = isDarkMode ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-black border-gray-300';
+       const wordColor = isDarkMode ? 'text-red-400' : 'text-red-600';
+       const shadowColor = isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.2)';
 
        return (
           <div className={gridClass}>
              {players.map((p) => {
                 const isMe = p.uid === currentUser.uid;
                 const itemClass = `flex justify-center items-center h-full w-full ${count === 3 && p.order === 3 ? 'col-span-2' : ''}`;
+                const isFlipped = state === 'revealed';
                 
                 return (
-                   <div key={p.uid} className={itemClass}>
-                      <div className={`relative flex flex-col items-center justify-center p-4 border-4 transition-all duration-300 rounded-3xl shadow-2xl aspect-[2.5/3.5] h-full max-h-[38vh] w-auto ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}>
-                         {state === 'playing' ? (
-                            <>
-                               <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
-                               <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
-                               {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
-                            </>
-                         ) : (
-                            <>
-                               <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
-                               <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
-                               <div className="flex-1 flex items-center justify-center w-full z-10">
-                                   {isMe ? 
-                                     <span className="text-gray-400 italic text-center font-bold text-lg">(คำของคุณถูกซ่อน)</span> 
-                                     : 
-                                     <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
-                                   }
-                               </div>
-                               {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
-                            </>
-                         )}
+                   <div key={p.uid} className={`${itemClass} [perspective:1000px]`}>
+                      {/* 3D Wrapper */}
+                      <div className={`relative w-full max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
+                         
+                         {/* FRONT OF CARD (Unrevealed, shows Name) */}
+                         <div className={`absolute inset-0 [backface-visibility:hidden] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
+                              style={{ boxShadow: `-4px 6px 0px ${shadowColor}` }}>
+                            <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
+                            <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
+                            {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                         </div>
+
+                         {/* BACK OF CARD (Revealed, shows Word) */}
+                         <div className={`absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
+                              style={{ boxShadow: `4px 6px 0px ${shadowColor}` }}>
+                            <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
+                            <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
+                            <div className="flex-1 flex items-center justify-center w-full z-10">
+                                {isMe ? 
+                                  <span className="text-gray-400 italic text-center font-bold text-lg">(คำของคุณถูกซ่อน)</span> 
+                                  : 
+                                  <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
+                                }
+                            </div>
+                            {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                         </div>
+
                       </div>
                    </div>
                 );
