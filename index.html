@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>คำต้องห้าม</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@800&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -117,6 +118,7 @@
       const [offset, setOffset] = useState(extendedItems.length * itemHeight / 2);
       const [locked, setLocked] = useState(false);
       const [selectedIdx, setSelectedIdx] = useState(null);
+      const [spinCount, setSpinCount] = useState(0);
 
       useEffect(() => {
          scrollRef.current = Math.floor(extendedItems.length / 2) * itemHeight;
@@ -124,7 +126,7 @@
       }, []);
 
       const handleTouchStart = (e) => {
-        if (locked) return;
+        if (locked || spinCount >= 2) return;
         cancelAnimationFrame(animFrameRef.current);
         isDraggingRef.current = true;
         lastYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
@@ -132,7 +134,7 @@
       };
 
       const handleTouchMove = (e) => {
-        if (!isDraggingRef.current || locked) return;
+        if (!isDraggingRef.current || locked || spinCount >= 2) return;
         const currentY = e.touches ? e.touches[0].clientY : e.clientY;
         const delta = lastYRef.current - currentY;
         lastYRef.current = currentY;
@@ -142,8 +144,13 @@
       };
 
       const handleTouchEnd = () => {
-        if (!isDraggingRef.current || locked) return;
+        if (!isDraggingRef.current || locked || spinCount >= 2) return;
         isDraggingRef.current = false;
+        
+        // Count as a spin only if flicked hard enough
+        if (Math.abs(velocityRef.current) > 2) {
+           setSpinCount(prev => prev + 1);
+        }
         momentumLoop();
       };
 
@@ -158,10 +165,10 @@
          
          if (Math.abs(velocityRef.current) > 0.5) {
             scrollRef.current += velocityRef.current;
-            velocityRef.current *= 0.95; // Friction
+            velocityRef.current *= 0.95; 
             isAnimating = true;
          } else if (Math.abs(diff) > 0.5) {
-            scrollRef.current += diff * 0.15; // Fluid snap magnetic pull
+            scrollRef.current += diff * 0.15; 
             isAnimating = true;
          }
          
@@ -183,18 +190,23 @@
       return (
         <div className="w-full flex flex-col items-center">
            <div 
-             className="relative w-full h-[350px] overflow-hidden bg-black/50 rounded-3xl border-2 border-gray-700 touch-none"
+             className={`relative w-full h-[350px] overflow-hidden bg-black/50 rounded-3xl border-2 touch-none ${spinCount >= 2 ? 'border-red-500/50' : 'border-gray-700'}`}
              onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
              onMouseDown={handleTouchStart} onMouseMove={handleTouchMove} onMouseUp={handleTouchEnd} onMouseLeave={handleTouchEnd}
            >
              <div className="absolute top-0 w-full h-[30%] bg-gradient-to-b from-black to-transparent z-10 pointer-events-none"></div>
              <div className="absolute bottom-0 w-full h-[30%] bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
-             <div className="absolute top-1/2 left-0 w-full h-[70px] -mt-[35px] border-y-2 border-yellow-400 bg-yellow-400/10 z-0 pointer-events-none"></div>
+             <div className="absolute top-[140px] left-0 w-full h-[70px] border-y-2 border-yellow-400 bg-yellow-400/10 z-0 pointer-events-none"></div>
 
-             <div className="absolute top-1/2 left-0 w-full duration-0" style={{ transform: `translateY(calc(140px - ${offset}px))` }}>
-               {extendedItems.map((item, idx) => (
-                 <div key={idx} className="h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center m-0 p-0 leading-none">{item}</div>
-               ))}
+             <div className="absolute top-[140px] left-0 w-full duration-0" style={{ transform: `translateY(${-offset + scrollRef.current}px)` }}>
+               {extendedItems.map((item, idx) => {
+                 const itemPos = (idx * itemHeight) - offset;
+                 return (
+                   <div key={idx} className="absolute left-0 w-full h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center m-0 p-0 leading-none" style={{ top: `${idx * itemHeight}px` }}>
+                     {item}
+                   </div>
+                 );
+               })}
              </div>
            </div>
            <div className="mt-8 w-full">
@@ -203,7 +215,9 @@
                 disabled={selectedIdx === null || locked}
                 className="w-full bg-white text-black font-black py-5 rounded-2xl text-2xl disabled:opacity-50 active:scale-95 transition"
              >START</button>
-             <p className="text-gray-400 text-center mt-4">เลื่อนเพื่อสุ่มหมวดหมู่ ปล่อยให้หยุดเพื่อเลือก</p>
+             <p className="text-gray-400 text-center mt-4">
+               {spinCount >= 2 ? 'สุ่มครบโควต้าแล้ว กด START เพื่อไปต่อ' : `ปัดเพื่อสุ่ม (เหลือสิทธิ์สุ่มอีก ${2 - spinCount} ครั้ง)`}
+             </p>
            </div>
         </div>
       );
@@ -211,26 +225,26 @@
 
     const CardGrid = ({ players, currentUser, state, isDarkMode }) => {
        const count = players.length;
-       let gridClass = "grid gap-4 w-full h-full max-w-4xl mx-auto " + (count <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2");
+       let gridClass = "grid gap-2 sm:gap-4 w-full h-full max-w-4xl mx-auto p-2 " + (count <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2");
        
        const cardBg = isDarkMode ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-black border-gray-300';
-       const wordColor = isDarkMode ? 'text-red-400' : 'text-red-600';
+       const wordColor = isDarkMode ? 'text-red-400' : 'text-black';
        const shadowColor = isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.2)';
 
        return (
           <div className={gridClass}>
              {players.map((p) => {
                 const isMe = p.uid === currentUser.uid;
-                const itemClass = `flex justify-center items-center h-full w-full ${count === 3 && p.order === 3 ? 'col-span-2' : ''}`;
+                const itemClass = `flex justify-center items-center h-full w-full min-h-0 ${count === 3 && p.order === 3 ? 'col-span-2' : ''}`;
                 const isFlipped = state === 'revealed';
                 
                 return (
                    <div key={p.uid} className={`${itemClass} [perspective:1000px]`}>
-                      {/* 3D Wrapper */}
-                      <div className={`relative w-full max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
+                      {/* Flex/Max-Height limits expansion causing overlap */}
+                      <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
                          
                          {/* FRONT OF CARD (Unrevealed, shows Name) */}
-                         <div className={`absolute inset-0 [backface-visibility:hidden] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
+                         <div className={`absolute inset-0 [-webkit-backface-visibility:hidden] [backface-visibility:hidden] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
                               style={{ boxShadow: `-4px 6px 0px ${shadowColor}` }}>
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
                             <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
@@ -238,13 +252,13 @@
                          </div>
 
                          {/* BACK OF CARD (Revealed, shows Word) */}
-                         <div className={`absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
+                         <div className={`absolute inset-0 [-webkit-backface-visibility:hidden] [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
                               style={{ boxShadow: `4px 6px 0px ${shadowColor}` }}>
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
                             <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
                             <div className="flex-1 flex items-center justify-center w-full z-10">
                                 {isMe ? 
-                                  <span className="text-gray-400 italic text-center font-bold text-lg">(คำของคุณถูกซ่อน)</span> 
+                                  <span className="text-gray-400 italic text-center font-bold text-lg">(ซ่อน)</span> 
                                   : 
                                   <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
                                 }
@@ -372,31 +386,63 @@
       if (!user) return <div className="min-h-screen bg-black text-white flex items-center justify-center">กำลังโหลด...</div>;
 
       if (!roomId || !room) {
+        const inputBg = isDarkMode ? 'bg-gray-200 text-black' : 'bg-white text-black';
+        
         return (
           <BackgroundWrapper>
-            <div className="flex flex-col items-center justify-center min-h-screen p-6 w-full max-w-md mx-auto z-10 relative">
-              <h1 className="text-5xl font-black text-white mb-10 tracking-widest" style={{transform: 'scaleY(1.3)'}}>คำต้องห้าม</h1>
-              <div className="w-full space-y-6 bg-black/60 p-6 rounded-2xl backdrop-blur-md">
-                <div>
-                  <label className="text-gray-300 block mb-2 font-bold">ชื่อเล่นของคุณ:</label>
-                  <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} className="w-full p-4 rounded-xl text-black font-bold text-lg text-center" placeholder="กรอกชื่อ..." />
+            <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full max-w-md mx-auto z-10 relative">
+              <h1 className="text-6xl font-black text-white mb-8 tracking-wider font-['Kanit']">คำต้องห้าม</h1>
+              
+              <div className="w-full bg-black/60 p-6 rounded-3xl backdrop-blur-md shadow-2xl">
+                <input 
+                  type="text" 
+                  value={nickname} 
+                  onChange={e => setNickname(e.target.value)}
+                  className={`w-full p-4 rounded-2xl font-bold text-xl text-center mb-6 transition-colors ${inputBg}`}
+                  placeholder="ใส่ชื่อเล่น"
+                />
+                
+                <div className="mb-8">
+                  <p className="text-gray-300 text-center font-bold mb-3">เลือกห้อง</p>
+                  <div className="flex space-x-3 justify-center">
+                    {['1', '2', '3', '4'].map(num => (
+                      <button 
+                        key={num}
+                        onClick={() => setRoomCodeInput(num)}
+                        className={`w-14 h-14 rounded-full font-black text-2xl transition-all ${roomCodeInput === num ? 'bg-yellow-400 text-black scale-110 shadow-lg' : 'bg-gray-700 text-white'}`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <button onClick={createRoom} disabled={!nickname} className="w-full bg-white text-black font-bold py-4 rounded-xl text-xl disabled:opacity-50">สร้างห้อง (HOST)</button>
-                <div className="relative flex py-4 items-center">
-                    <div className="flex-grow border-t border-gray-500"></div><span className="flex-shrink-0 mx-4 text-gray-500 font-bold">หรือ</span><div className="flex-grow border-t border-gray-500"></div>
-                </div>
-                <div className="flex space-x-2">
-                  <input type="tel" value={roomCodeInput} onChange={e => setRoomCodeInput(e.target.value)} className="w-2/3 p-4 rounded-xl text-black font-bold text-center text-2xl" placeholder="เลขห้อง 1 ตัว" maxLength={1} />
-                  <button onClick={joinRoom} disabled={!nickname || roomCodeInput.length < 1} className="w-1/3 bg-blue-600 text-white font-bold rounded-xl text-lg disabled:opacity-50">เข้าร่วม</button>
+
+                <div className="flex space-x-3">
+                   <button 
+                    onClick={createRoom}
+                    disabled={!nickname || !roomCodeInput}
+                    className="flex-1 bg-white text-black font-black py-4 rounded-2xl text-xl disabled:opacity-50 active:scale-95 transition shadow-lg"
+                   >
+                     สร้างห้อง
+                   </button>
+                   <button 
+                    onClick={joinRoom}
+                    disabled={!nickname || !roomCodeInput}
+                    className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl text-xl disabled:opacity-50 active:scale-95 transition shadow-lg"
+                   >
+                     เข้าร่วม
+                   </button>
                 </div>
               </div>
-              
-              <button 
-                onClick={() => setIsDarkMode(!isDarkMode)} 
-                className="absolute bottom-8 right-6 w-14 h-14 flex items-center justify-center bg-gray-800 text-2xl rounded-full shadow-lg border border-gray-600 z-50 transition-transform active:scale-95"
-              >
-                {isDarkMode ? '☀️' : '🌙'}
-              </button>
+
+              <div className="w-full flex justify-end mt-4">
+                <button 
+                  onClick={() => setIsDarkMode(!isDarkMode)} 
+                  className="w-14 h-14 flex items-center justify-center bg-gray-800 text-2xl rounded-full shadow-lg border border-gray-600 z-50 transition-transform active:scale-95"
+                >
+                  {isDarkMode ? '☀️' : '🌙'}
+                </button>
+              </div>
             </div>
           </BackgroundWrapper>
         );
@@ -482,8 +528,10 @@
       return (
         <BackgroundWrapper>
            <div className="flex flex-col h-[100dvh] w-full mx-auto p-4 z-10 relative overflow-hidden">
-              <div className="flex justify-between items-center mb-2 mt-2 max-w-3xl mx-auto w-full flex-shrink-0">
-                 <h2 className="text-white text-xl font-bold tracking-wider">{categoryText}</h2><span className="text-gray-400 text-sm">ห้อง: {roomId}</span>
+              {/* Added solid background and z-index to header to cleanly separate it from cards */}
+              <div className="flex justify-between items-center mb-4 mt-2 max-w-3xl mx-auto w-full flex-shrink-0 z-20 bg-gray-900/80 p-3 rounded-2xl border border-gray-700 backdrop-blur-sm">
+                 <h2 className="text-white text-lg sm:text-xl font-bold tracking-wider truncate mr-2">{categoryText}</h2>
+                 <span className="text-gray-400 text-sm font-bold whitespace-nowrap">ห้อง: {roomId}</span>
               </div>
               
               <div className="flex-1 flex items-center justify-center w-full min-h-0">
