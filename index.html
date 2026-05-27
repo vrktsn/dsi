@@ -230,8 +230,13 @@
       const [roomId, setRoomId] = useState(null);
 
       useEffect(() => {
-        signInAnonymously(auth).catch(e => console.error("Auth error", e));
-        const unsubscribe = onAuthStateChanged(auth, setUser);
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            signInAnonymously(auth).catch(e => console.error("Auth error", e));
+          }
+        });
         if (window.location.hash) setRoomCodeInput(window.location.hash.substring(1).toUpperCase());
         return () => unsubscribe();
       }, []);
