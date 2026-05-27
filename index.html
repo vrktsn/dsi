@@ -248,25 +248,38 @@
        const wordColor = isDarkMode ? 'text-white' : 'text-black';
        const shadowColor = isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.2)';
 
+       // Network sync buffer: Waits 800ms before flipping so all devices execute simultaneously
+       const [syncedFlip, setSyncedFlip] = useState(false);
+       useEffect(() => {
+          if (state === 'revealed') {
+             const timer = setTimeout(() => setSyncedFlip(true), 800);
+             return () => clearTimeout(timer);
+          } else {
+             setSyncedFlip(false);
+          }
+       }, [state]);
+
        return (
           <div className={gridClass}>
              {players.map((p) => {
                 const isMe = p.uid === currentUser.uid;
                 const itemClass = `flex justify-center items-center h-full w-full min-h-0 ${count === 3 && p.order === 3 ? 'col-span-2' : ''}`;
-                const isFlipped = state === 'revealed';
+                const isFlipped = syncedFlip;
                 
                 return (
                    <div key={p.uid} className={`${itemClass} [perspective:1500px]`}>
-                      {/* Wrapper handles the rotation transition */}
                       <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'}`}>
                          
-                         {/* FRONT OF CARD (Visible when rotation is 0deg) */}
+                         {/* FRONT OF CARD */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
                               style={{ 
                                   boxShadow: `-4px 6px 0px ${shadowColor}`, 
                                   WebkitBackfaceVisibility: 'hidden', 
-                                  backfaceVisibility: 'hidden' 
+                                  backfaceVisibility: 'hidden',
+                                  transform: 'translateZ(1px)', // Forces iOS Safari to strictly layer the front face
+                                  opacity: isFlipped ? 0 : 1,
+                                  transition: 'opacity 0.3s ease-in-out 0.2s' // Smooth crossfade mid-flip to prevent blinking
                               }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400/50 rounded-2xl pointer-events-none"></div>
@@ -274,14 +287,16 @@
                             {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
                          </div>
 
-                         {/* BACK OF CARD (Starts rotated at 180deg, visible when parent reaches 180deg) */}
+                         {/* BACK OF CARD */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
                               style={{ 
                                   boxShadow: `4px 6px 0px ${shadowColor}`, 
-                                  transform: 'rotateY(180deg)', 
+                                  transform: 'rotateY(180deg) translateZ(1px)', // Forces iOS Safari to strictly layer the back face
                                   WebkitBackfaceVisibility: 'hidden', 
-                                  backfaceVisibility: 'hidden' 
+                                  backfaceVisibility: 'hidden',
+                                  opacity: isFlipped ? 1 : 0,
+                                  transition: 'opacity 0.3s ease-in-out 0.2s' // Smooth crossfade mid-flip to prevent blinking
                               }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400/50 rounded-2xl pointer-events-none"></div>
