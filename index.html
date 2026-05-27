@@ -259,41 +259,43 @@
                 
                 return (
                    <div key={p.uid} className={`${itemClass} [perspective:1500px]`}>
+                      {/* Wrapper handles the rotation transition */}
                       <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'}`}>
                          
-                         {/* FRONT OF CARD */}
+                         {/* FRONT OF CARD (Visible when rotation is 0deg) */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
-                              style={{ boxShadow: `-4px 6px 0px ${shadowColor}`, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', zIndex: isFlipped ? 1 : 10, opacity: isFlipped ? 0 : 1 }}
+                              style={{ 
+                                  boxShadow: `-4px 6px 0px ${shadowColor}`, 
+                                  WebkitBackfaceVisibility: 'hidden', 
+                                  backfaceVisibility: 'hidden' 
+                              }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400/50 rounded-2xl pointer-events-none"></div>
-                            {!isFlipped && (
-                               <>
-                                  <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
-                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
-                               </>
-                            )}
+                            <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
+                            {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
                          </div>
 
-                         {/* BACK OF CARD */}
+                         {/* BACK OF CARD (Starts rotated at 180deg, visible when parent reaches 180deg) */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
-                              style={{ boxShadow: `4px 6px 0px ${shadowColor}`, transform: 'rotateY(180deg)', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', zIndex: isFlipped ? 10 : 1, opacity: isFlipped ? 1 : 0 }}
+                              style={{ 
+                                  boxShadow: `4px 6px 0px ${shadowColor}`, 
+                                  transform: 'rotateY(180deg)', 
+                                  WebkitBackfaceVisibility: 'hidden', 
+                                  backfaceVisibility: 'hidden' 
+                              }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400/50 rounded-2xl pointer-events-none"></div>
-                            {isFlipped && (
-                               <>
-                                  <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
-                                  <div className="flex-1 flex items-center justify-center w-full z-10">
-                                      {isMe ? 
-                                        <span className="text-gray-400 italic text-center font-bold text-lg">{lang === 'TH' ? '(ซ่อน)' : '(Hidden)'}</span> 
-                                        : 
-                                        <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
-                                      }
-                                  </div>
-                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
-                               </>
-                            )}
+                            <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
+                            <div className="flex-1 flex items-center justify-center w-full z-10">
+                                {isMe ? 
+                                  <span className="text-gray-400 italic text-center font-bold text-lg">{lang === 'TH' ? '(ซ่อน)' : '(Hidden)'}</span> 
+                                  : 
+                                  <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
+                                }
+                            </div>
+                            {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
                          </div>
                       </div>
                    </div>
@@ -512,7 +514,7 @@
               <h1 className="text-6xl font-black text-white mb-1 tracking-wider">
                 {lang === 'TH' ? 'คำต้องห้าม' : 'Taboo'}
               </h1>
-              <p className="text-gray-600 text-[10px] font-bold mb-6 tracking-widest uppercase">dsi v0.8</p>
+              <p className="text-gray-600 text-[10px] font-bold mb-6 tracking-widest uppercase">dsi v0.8.1</p>
               
               <div className="w-full bg-black/60 p-6 rounded-3xl backdrop-blur-md shadow-2xl">
                 <input 
