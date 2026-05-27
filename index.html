@@ -86,7 +86,7 @@
       }
     };
 
-    const generateRoomCode = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+    const generateRoomCode = () => Math.floor(Math.random() * 10).toString();
 
     // --- COMPONENTS ---
     const BackgroundWrapper = ({ children }) => (
@@ -192,27 +192,30 @@
 
     const CardGrid = ({ players, currentUser, state }) => {
        const count = players.length;
-       let gridClass = "grid gap-4 w-full h-full p-4 " + (count <= 2 ? "grid-cols-1 grid-rows-2 max-w-sm mx-auto" : "grid-cols-2 grid-rows-2");
+       // Responsive 2x2 grid. Fits mobile width, and desktop height.
+       let gridClass = "grid gap-3 w-full max-w-3xl mx-auto h-[75vh] " + 
+           (count <= 2 ? "grid-cols-1 grid-rows-2 max-w-[250px]" : "grid-cols-2 grid-rows-2");
 
        return (
           <div className={gridClass}>
              {players.map((p) => {
                 const isMe = p.uid === currentUser.uid;
+                const itemClass = `flex justify-center items-center ${count === 3 && p.order === 3 ? 'col-span-2' : ''}`;
+                
                 return (
-                   <div key={p.uid} className={`flex ${count === 3 && p.order === 3 ? 'col-span-2 justify-center' : ''}`}>
-                      <div className={`relative w-full max-w-[200px] bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 transition-transform duration-500 border-4 ${isMe ? 'border-yellow-400' : 'border-gray-200'} ${count === 3 && p.order === 3 ? 'w-[50%]' : ''}`}>
-                         {state === 'playing' ? (
-                            <>
-                               <div className="absolute inset-2 border-2 border-red-500 rounded-xl opacity-30"></div>
-                               <h3 className="text-2xl font-black text-gray-800 z-10 break-words text-center">{p.name}</h3>
-                               {isMe && <span className="absolute bottom-3 text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">คุณ</span>}
-                            </>
-                         ) : (
-                            <div className="flex flex-col items-center justify-center w-full h-full space-y-2">
-                               <span className="text-sm font-bold text-gray-500 uppercase">{p.name}</span>
-                               {isMe ? <span className="text-gray-400 italic text-center font-bold">(คำของคุณถูกซ่อน)</span> : <span className="text-3xl font-black text-red-600 text-center break-words leading-tight">{p.word}</span>}
-                            </div>
-                         )}
+                   <div key={p.uid} className={itemClass}>
+                      <div className={`relative w-full h-full max-h-[40vh] aspect-[2.5/3.5] bg-white rounded-3xl shadow-2xl flex flex-col items-center justify-center p-4 border-4 ${isMe ? 'border-yellow-400' : 'border-gray-300'}`}>
+                         <div className="absolute inset-2 border-2 border-dashed border-gray-300 rounded-2xl opacity-50 pointer-events-none"></div>
+                         <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
+                         
+                         <div className="flex-1 flex items-center justify-center w-full z-10">
+                             {isMe ? 
+                               <span className="text-gray-400 italic text-center font-bold text-lg">(คำของคุณถูกซ่อน)</span> 
+                               : 
+                               <span className="text-4xl md:text-5xl font-black text-red-600 text-center break-words leading-tight">{p.word}</span>
+                             }
+                         </div>
+                         {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
                       </div>
                    </div>
                 );
@@ -256,7 +259,7 @@
       }, [roomId]);
 
       useEffect(() => {
-        if (!room || !user || !roomId || room.state !== 'revealed') return;
+        if (!room || !user || !roomId || room.state !== 'playing') return;
         const activeCount = room.players.length;
         if (room.replayVotes?.length >= activeCount) resetGame(true);
         else if (room.restartVotes?.length >= activeCount) resetGame(false);
@@ -313,8 +316,14 @@
       };
 
       const handleVote = async (type) => {
-        const voteArr = room[type] || [];
-        if (!voteArr.includes(user.uid)) await updateDoc(doc(db, 'rooms', roomId), { [type]: [...voteArr, user.uid] });
+        const otherType = type === 'replayVotes' ? 'restartVotes' : 'replayVotes';
+        const newTargetVotes = [...new Set([...(room[type] || []), user.uid])];
+        const newOtherVotes = (room[otherType] || []).filter(uid => uid !== user.uid);
+        
+        await updateDoc(doc(db, 'rooms', roomId), { 
+          [type]: newTargetVotes,
+          [otherType]: newOtherVotes
+        });
       };
 
       const resetGame = async (keepSettings) => {
@@ -340,8 +349,8 @@
                     <div className="flex-grow border-t border-gray-500"></div><span className="flex-shrink-0 mx-4 text-gray-500 font-bold">หรือ</span><div className="flex-grow border-t border-gray-500"></div>
                 </div>
                 <div className="flex space-x-2">
-                  <input type="text" value={roomCodeInput} onChange={e => setRoomCodeInput(e.target.value.toUpperCase())} className="w-2/3 p-4 rounded-xl text-black font-bold text-center uppercase tracking-widest text-xl" placeholder="รหัสห้อง" maxLength={4} />
-                  <button onClick={joinRoom} disabled={!nickname || roomCodeInput.length < 4} className="w-1/3 bg-blue-600 text-white font-bold rounded-xl text-lg disabled:opacity-50">เข้าร่วม</button>
+                  <input type="tel" value={roomCodeInput} onChange={e => setRoomCodeInput(e.target.value)} className="w-2/3 p-4 rounded-xl text-black font-bold text-center text-2xl" placeholder="เลขห้อง 1 ตัว" maxLength={1} />
+                  <button onClick={joinRoom} disabled={!nickname || roomCodeInput.length < 1} className="w-1/3 bg-blue-600 text-white font-bold rounded-xl text-lg disabled:opacity-50">เข้าร่วม</button>
                 </div>
               </div>
             </div>
@@ -417,25 +426,48 @@
          );
       }
 
+      let pressTimer = null;
+      const handlePointerDown = (isReplay) => {
+         if (!isHost) return;
+         pressTimer = setTimeout(() => { resetGame(isReplay); }, 1500);
+      };
+      const handlePointerUp = () => { if (pressTimer) clearTimeout(pressTimer); };
+
       return (
         <BackgroundWrapper>
-           <div className="flex flex-col min-h-screen w-full max-w-lg mx-auto p-4 z-10 relative">
-              <div className="flex justify-between items-center mb-6 mt-4">
-                 <h2 className="text-white text-xl font-bold tracking-wider">{room.category}</h2><span className="text-gray-400 text-sm">ROOM: {roomId}</span>
+           <div className="flex flex-col min-h-screen w-full mx-auto p-4 z-10 relative">
+              <div className="flex justify-between items-center mb-4 mt-2 max-w-3xl mx-auto w-full">
+                 <h2 className="text-white text-xl font-bold tracking-wider">{room.category}</h2><span className="text-gray-400 text-sm">ห้อง: {roomId}</span>
               </div>
-              <div className="flex-1 flex items-center justify-center">
+              
+              <div className="flex-1 flex items-center justify-center w-full">
                  <CardGrid players={room.players} currentUser={user} state={room.state} />
               </div>
-              {room.state === 'playing' && isHost && (
-                 <button onClick={() => updateDoc(doc(db, 'rooms', roomId), { state: 'revealed' })} className="mt-6 bg-white text-black font-bold py-4 rounded-xl text-xl w-full">เปิดการ์ด (Host)</button>
-              )}
-              {room.state === 'revealed' && (
-                 <div className="mt-6 bg-black/60 p-4 rounded-2xl backdrop-blur-md w-full space-y-3">
-                    <p className="text-center text-white mb-2 font-bold">จบตาแล้ว กดโหวตเพื่อไปต่อ</p>
+
+              {room.state === 'playing' && (
+                 <div className="mt-4 bg-black/60 p-4 rounded-3xl backdrop-blur-md w-full max-w-3xl mx-auto space-y-3 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+                    <p className="text-center text-white mb-2 font-bold text-lg">โหวตตาต่อไป</p>
                     <div className="flex space-x-3">
-                       <button onClick={() => handleVote('replayVotes')} className={`flex-1 py-4 rounded-xl font-bold text-lg transition ${room.replayVotes?.includes(user.uid) ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>เล่นใหม่</button>
-                       <button onClick={() => handleVote('restartVotes')} className={`flex-1 py-4 rounded-xl font-bold text-lg transition ${room.restartVotes?.includes(user.uid) ? 'bg-red-600 text-white' : 'bg-gray-700 text-white'}`}>เริ่มใหม่</button>
+                       <button 
+                         onClick={() => handleVote('replayVotes')}
+                         onPointerDown={() => handlePointerDown(true)}
+                         onPointerUp={handlePointerUp}
+                         onPointerLeave={handlePointerUp}
+                         className={`flex-1 py-4 rounded-2xl font-black text-xl transition-all ${room.replayVotes?.includes(user.uid) ? 'bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-95' : 'bg-gray-700 text-gray-300'}`}
+                       >
+                         เล่นซ้ำ
+                       </button>
+                       <button 
+                         onClick={() => handleVote('restartVotes')}
+                         onPointerDown={() => handlePointerDown(false)}
+                         onPointerUp={handlePointerUp}
+                         onPointerLeave={handlePointerUp}
+                         className={`flex-1 py-4 rounded-2xl font-black text-xl transition-all ${room.restartVotes?.includes(user.uid) ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)] scale-95' : 'bg-gray-700 text-gray-300'}`}
+                       >
+                         หน้าหลัก
+                       </button>
                     </div>
+                    {isHost && <p className="text-center text-gray-500 text-xs mt-1">(โฮสต์: กดปุ่มไหนก็ได้ค้างไว้ 1.5 วิ เพื่อบังคับไปต่อ)</p>}
                  </div>
               )}
            </div>
