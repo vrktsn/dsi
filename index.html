@@ -240,30 +240,54 @@
                 
                 return (
                    <div key={p.uid} className={`${itemClass} [perspective:1000px]`}>
-                      {/* Flex/Max-Height limits expansion causing overlap */}
                       <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
                          
                          {/* FRONT OF CARD (Unrevealed, shows Name) */}
-                         <div className={`absolute inset-0 [-webkit-backface-visibility:hidden] [backface-visibility:hidden] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
-                              style={{ boxShadow: `-4px 6px 0px ${shadowColor}` }}>
+                         <div 
+                              className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
+                              style={{ 
+                                 boxShadow: `-4px 6px 0px ${shadowColor}`,
+                                 WebkitBackfaceVisibility: 'hidden',
+                                 backfaceVisibility: 'hidden',
+                                 zIndex: isFlipped ? 1 : 10,
+                                 opacity: isFlipped ? 0 : 1
+                              }}
+                         >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
-                            <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
-                            {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                            {!isFlipped && (
+                               <>
+                                  <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
+                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                               </>
+                            )}
                          </div>
 
                          {/* BACK OF CARD (Revealed, shows Word) */}
-                         <div className={`absolute inset-0 [-webkit-backface-visibility:hidden] [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
-                              style={{ boxShadow: `4px 6px 0px ${shadowColor}` }}>
+                         <div 
+                              className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
+                              style={{ 
+                                 boxShadow: `4px 6px 0px ${shadowColor}`,
+                                 transform: 'rotateY(180deg)',
+                                 WebkitBackfaceVisibility: 'hidden',
+                                 backfaceVisibility: 'hidden',
+                                 zIndex: isFlipped ? 10 : 1,
+                                 opacity: isFlipped ? 1 : 0
+                              }}
+                         >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
-                            <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
-                            <div className="flex-1 flex items-center justify-center w-full z-10">
-                                {isMe ? 
-                                  <span className="text-gray-400 italic text-center font-bold text-lg">(ซ่อน)</span> 
-                                  : 
-                                  <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
-                                }
-                            </div>
-                            {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                            {isFlipped && (
+                               <>
+                                  <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
+                                  <div className="flex-1 flex items-center justify-center w-full z-10">
+                                      {isMe ? 
+                                        <span className="text-gray-400 italic text-center font-bold text-lg">(ซ่อน)</span> 
+                                        : 
+                                        <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
+                                      }
+                                  </div>
+                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                               </>
+                            )}
                          </div>
 
                       </div>
@@ -317,8 +341,8 @@
       }, [room?.replayVotes, room?.restartVotes, room?.state, room?.players.length]);
 
       const createRoom = async () => {
-        if (!nickname) return;
-        const newRoomId = generateRoomCode();
+        if (!nickname || !roomCodeInput) return;
+        const newRoomId = roomCodeInput;
         await setDoc(doc(db, 'rooms', newRoomId), {
           hostId: user.uid,
           state: 'settings',
@@ -454,8 +478,8 @@
         return (
           <BackgroundWrapper>
             <div className="flex flex-col min-h-screen p-6 w-full max-w-md mx-auto z-10 relative">
-               <h1 className="text-4xl font-black text-white mt-10 mb-2 text-center tracking-widest" style={{transform: 'scaleY(1.3)'}}>คำต้องห้าม</h1>
-               <p className="text-center text-gray-400 mb-8 font-mono tracking-widest">ROOM: {roomId}</p>
+               <h1 className="text-5xl font-black text-white mt-10 mb-2 text-center tracking-wider font-['Kanit']">คำต้องห้าม</h1>
+               <p className="text-center text-gray-400 mb-8 font-mono tracking-widest font-bold">ห้อง: {roomId}</p>
                {isHost ? (
                  <div className="flex-1 space-y-8 mt-4 bg-black/60 p-6 rounded-3xl backdrop-blur-md">
                    <div>
