@@ -198,15 +198,12 @@
              <div className="absolute bottom-0 w-full h-[30%] bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
              <div className="absolute top-[140px] left-0 w-full h-[70px] border-y-2 border-yellow-400 bg-yellow-400/10 z-0 pointer-events-none"></div>
 
-             <div className="absolute top-[140px] left-0 w-full duration-0" style={{ transform: `translateY(${-offset + scrollRef.current}px)` }}>
-               {extendedItems.map((item, idx) => {
-                 const itemPos = (idx * itemHeight) - offset;
-                 return (
-                   <div key={idx} className="absolute left-0 w-full h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center m-0 p-0 leading-none" style={{ top: `${idx * itemHeight}px` }}>
-                     {item}
-                   </div>
-                 );
-               })}
+             <div className="absolute top-[140px] left-0 w-full duration-0" style={{ transform: `translateY(${-offset}px)` }}>
+               {extendedItems.map((item, idx) => (
+                 <div key={idx} className="h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center m-0 p-0 leading-none">
+                   {item}
+                 </div>
+               ))}
              </div>
            </div>
            <div className="mt-8 w-full">
@@ -239,8 +236,8 @@
                 const isFlipped = state === 'revealed';
                 
                 return (
-                   <div key={p.uid} className={`${itemClass} [perspective:1000px]`}>
-                      <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
+                   <div key={p.uid} className={`${itemClass} [perspective:1500px]`}>
+                      <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'}`}>
                          
                          {/* FRONT OF CARD (Unrevealed, shows Name) */}
                          <div 
@@ -334,7 +331,7 @@
       }, [roomId]);
 
       useEffect(() => {
-        if (!room || !user || !roomId || room.state !== 'playing') return;
+        if (!room || !user || !roomId || room.state !== 'revealed') return;
         const activeCount = room.players.length;
         if (room.replayVotes?.length >= activeCount) resetGame(true);
         else if (room.restartVotes?.length >= activeCount) resetGame(false);
