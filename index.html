@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>คำต้องห้าม</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel (translates JSX in browser) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body { font-family: sans-serif; background-color: #000; overscroll-behavior-y: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" data-type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ==========================================
+    // ⚠️ EDIT THIS SECTION: PUT YOUR FIREBASE CONFIG HERE
+    // ==========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBhl1a_B7UBOjNiktGRCuKMEBAtbMr2YC4",
+    authDomain: "dsit-deba3.firebaseapp.com",
+    projectId: "dsit-deba3",
+    storageBucket: "dsit-deba3.firebasestorage.app",
+    messagingSenderId: "500208903268",
+    appId: "1:500208903268:web:2396c75019196a09b66b71"
+    };
+    // ==========================================
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const { useState, useEffect, useRef } = React;
+
+    const CATEGORIES = {
+      "ทำงาน": ["หัวหน้า", "ประชุม", "เงินเดือน", "ลาป่วย", "สแกนนิ้ว", "โอที", "ลูกค้า", "อีเมล", "รายงาน", "พรีเซนต์"],
+      "โรงเรียน": ["การบ้าน", "สอบ", "ครู", "เข้าแถว", "โดดเรียน", "พละ", "กระดานดำ", "ดินสอ", "พักเที่ยง", "สมุดพก"],
+      "บ้าน": ["กวาดบ้าน", "ล้างจาน", "รีโมท", "โซฟา", "เตียงนอน", "ตู้เย็น", "ไม้แขวนเสื้อ", "ผ้าเช็ดตัว", "สบู่", "ถังขยะ"],
+      "อาหาร/เครื่องดื่ม": ["กาแฟ", "ชาไข่มุก", "ส้มตำ", "หมูกระทะ", "พิซซ่า", "น้ำแข็งเปล่า", "ข้าวมันไก่", "กะเพรา", "ยำ", "บุฟเฟ่ต์"],
+      "อินเทอร์เน็ต": ["ไวไฟ", "รหัสผ่าน", "เน็ตหลุด", "ค้าง", "แชร์", "ไลค์", "บล็อค", "ไวรัส", "แฮกเกอร์", "ลิ้งก์"],
+      "กีฬา": ["ฟุตบอล", "วิ่ง", "ว่ายน้ำ", "แบดมินตัน", "มวย", "เหรียญทอง", "กรรมการ", "ล้ำหน้า", "แข่งขัน", "โยคะ"],
+      "สัตว์": ["หมา", "แมว", "ช้าง", "งู", "นก", "เสือ", "ปลา", "จระเข้", "ยุง", "แมลงสาบ"],
+      "ท่องเที่ยว": ["ทะเล", "ภูเขา", "ตั๋วเครื่องบิน", "กระเป๋าเดินทาง", "โรงแรม", "แผนที่", "พาสปอร์ต", "รถไฟ", "ถ่ายรูป", "ของฝาก"],
+      "ยานพาหนะ": ["รถเมล์", "มอเตอร์ไซค์", "แท็กซี่", "เรือ", "เครื่องบิน", "รถไฟฟ้า", "จักรยาน", "เฮลิคอปเตอร์", "รถตู้", "รถบรรทุก"],
+      "เสื้อผ้า/แฟชั่น": ["กางเกงยีนส์", "เสื้อยืด", "กระโปรง", "รองเท้าผ้าใบ", "ถุงเท้า", "หมวก", "แว่นตา", "นาฬิกา", "กระเป๋าสะพาย", "เข็มขัด"],
+      "ภาพยนตร์/ซีรีส์": ["พระเอก", "นางเอก", "ผู้กำกับ", "ป๊อปคอร์น", "ตั๋วหนัง", "ซับไทย", "สปอยล์", "ฉากจบ", "ผี", "ตลก"],
+      "ดนตรี": ["ร้องเพลง", "กีตาร์", "กลอง", "ไมโครโฟน", "หูฟัง", "คอนเสิร์ต", "เนื้อเพลง", "เต้น", "หมอลำ", "แร็ป"],
+      "สุขภาพ/ร่างกาย": ["หมอ", "ยา", "โรงพยาบาล", "เป็นไข้", "ปวดหัว", "ไอ", "เลือด", "น้ำมูก", "แผล", "น้ำหนัก"],
+      "เครื่องใช้ไฟฟ้า": ["พัดลม", "แอร์", "ทีวี", "เครื่องซักผ้า", "เตารีด", "หม้อหุงข้าว", "ไมโครเวฟ", "ปลั๊กไฟ", "ไดร์เป่าผม", "ลำโพง"],
+      "ความรัก": ["แฟน", "แต่งงาน", "จีบ", "อกหัก", "ทะเลาะ", "กอด", "จูบ", "ดอกกุหลาบ", "บอกรัก", "นอกใจ"]
+    };
+    const CATEGORY_KEYS = Object.keys(CATEGORIES);
+
+    const playDing = () => {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+      } catch (e) {
+        console.error("Audio error", e);
+      }
+    };
+
+    const generateRoomCode = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+
+    // --- COMPONENTS ---
+    const BackgroundWrapper = ({ children }) => (
+      <div className="relative min-h-screen overflow-hidden bg-gray-900 select-none">
+        <div 
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
+            backgroundImage: 'radial-gradient(circle at center, #ffffff 1px, transparent 1px), radial-gradient(circle at center, #ffffff 1px, transparent 1px)',
+            backgroundSize: '24px 24px',
+            backgroundPosition: '0 0, 12px 12px'
+          }}
+        />
+        {children}
+      </div>
+    );
+
+    const WheelSpinner = ({ items, onLock }) => {
+      const scrollRef = useRef(0);
+      const velocityRef = useRef(0);
+      const isDraggingRef = useRef(false);
+      const lastYRef = useRef(0);
+      const animFrameRef = useRef(null);
+      
+      const itemHeight = 70;
+      const extendedItems = [...items, ...items, ...items, ...items, ...items];
+      
+      const [offset, setOffset] = useState(extendedItems.length * itemHeight / 2);
+      const [locked, setLocked] = useState(false);
+      const [selectedIdx, setSelectedIdx] = useState(null);
+
+      useEffect(() => {
+         scrollRef.current = Math.floor(extendedItems.length / 2) * itemHeight;
+         setOffset(scrollRef.current);
+      }, []);
+
+      const handleTouchStart = (e) => {
+        if (locked) return;
+        cancelAnimationFrame(animFrameRef.current);
+        isDraggingRef.current = true;
+        lastYRef.current = e.touches ? e.touches[0].clientY : e.clientY;
+        velocityRef.current = 0;
+      };
+
+      const handleTouchMove = (e) => {
+        if (!isDraggingRef.current || locked) return;
+        const currentY = e.touches ? e.touches[0].clientY : e.clientY;
+        const delta = lastYRef.current - currentY;
+        lastYRef.current = currentY;
+        velocityRef.current = delta;
+        scrollRef.current += delta;
+        setOffset(scrollRef.current);
+      };
+
+      const handleTouchEnd = () => {
+        if (!isDraggingRef.current || locked) return;
+        isDraggingRef.current = false;
+        momentumLoop();
+      };
+
+      const momentumLoop = () => {
+        if (Math.abs(velocityRef.current) > 0.5) {
+          scrollRef.current += velocityRef.current;
+          velocityRef.current *= 0.95;
+          setOffset(scrollRef.current);
+          animFrameRef.current = requestAnimationFrame(momentumLoop);
+        } else {
+          const snapIndex = Math.round(scrollRef.current / itemHeight);
+          scrollRef.current = snapIndex * itemHeight;
+          setOffset(scrollRef.current);
+          playDing();
+          setSelectedIdx(snapIndex % items.length);
+        }
+      };
+
+      return (
+        <div className="w-full flex flex-col items-center">
+           <div 
+             className="relative w-full h-[350px] overflow-hidden bg-black/50 rounded-3xl border-2 border-gray-700 touch-none"
+             onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}
+             onMouseDown={handleTouchStart} onMouseMove={handleTouchMove} onMouseUp={handleTouchEnd} onMouseLeave={handleTouchEnd}
+           >
+             <div className="absolute top-0 w-full h-[20%] bg-gradient-to-b from-black to-transparent z-10 pointer-events-none"></div>
+             <div className="absolute bottom-0 w-full h-[20%] bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
+             <div className="absolute top-1/2 left-0 w-full h-[70px] -mt-[35px] border-y-2 border-yellow-400 bg-yellow-400/10 z-0 pointer-events-none"></div>
+
+             <div className="absolute top-1/2 left-0 w-full transition-transform duration-75 ease-linear" style={{ transform: `translateY(${-offset}px)` }}>
+               {extendedItems.map((item, idx) => (
+                 <div key={idx} className="h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center">{item}</div>
+               ))}
+             </div>
+           </div>
+           <div className="mt-8 w-full">
+             <button 
+                onClick={() => { setLocked(true); onLock(items[selectedIdx]); }}
+                disabled={selectedIdx === null || locked}
+                className="w-full bg-white text-black font-black py-5 rounded-2xl text-2xl disabled:opacity-50 active:scale-95 transition"
+             >START</button>
+             <p className="text-gray-400 text-center mt-4">เลื่อนเพื่อสุ่มหมวดหมู่ ปล่อยให้หยุดเพื่อเลือก</p>
+           </div>
+        </div>
+      );
+    };
+
+    const CardGrid = ({ players, currentUser, state }) => {
+       const count = players.length;
+       let gridClass = "grid gap-4 w-full h-full p-4 " + (count <= 2 ? "grid-cols-1 grid-rows-2 max-w-sm mx-auto" : "grid-cols-2 grid-rows-2");
+
+       return (
+          <div className={gridClass}>
+             {players.map((p) => {
+                const isMe = p.uid === currentUser.uid;
+                return (
+                   <div key={p.uid} className={`flex ${count === 3 && p.order === 3 ? 'col-span-2 justify-center' : ''}`}>
+                      <div className={`relative w-full max-w-[200px] bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 transition-transform duration-500 border-4 ${isMe ? 'border-yellow-400' : 'border-gray-200'} ${count === 3 && p.order === 3 ? 'w-[50%]' : ''}`}>
+                         {state === 'playing' ? (
+                            <>
+                               <div className="absolute inset-2 border-2 border-red-500 rounded-xl opacity-30"></div>
+                               <h3 className="text-2xl font-black text-gray-800 z-10 break-words text-center">{p.name}</h3>
+                               {isMe && <span className="absolute bottom-3 text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-1 rounded-full">คุณ</span>}
+                            </>
+                         ) : (
+                            <div className="flex flex-col items-center justify-center w-full h-full space-y-2">
+                               <span className="text-sm font-bold text-gray-500 uppercase">{p.name}</span>
+                               {isMe ? <span className="text-gray-400 italic text-center font-bold">(คำของคุณถูกซ่อน)</span> : <span className="text-3xl font-black text-red-600 text-center break-words leading-tight">{p.word}</span>}
+                            </div>
+                         )}
+                      </div>
+                   </div>
+                );
+             })}
+          </div>
+       );
+    };
+
+    // --- MAIN APP ---
+    function App() {
+      const [user, setUser] = useState(null);
+      const [nickname, setNickname] = useState('');
+      const [roomCodeInput, setRoomCodeInput] = useState('');
+      const [room, setRoom] = useState(null);
+      const [roomId, setRoomId] = useState(null);
+
+      useEffect(() => {
+        signInAnonymously(auth).catch(e => console.error("Auth error", e));
+        const unsubscribe = onAuthStateChanged(auth, setUser);
+        if (window.location.hash) setRoomCodeInput(window.location.hash.substring(1).toUpperCase());
+        return () => unsubscribe();
+      }, []);
+
+      useEffect(() => {
+        if (!user || !roomId) return;
+        const docRef = doc(db, 'rooms', roomId);
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) setRoom(docSnap.data());
+        });
+        return () => unsubscribe();
+      }, [user, roomId]);
+
+      useEffect(() => {
+        if (roomId) window.location.hash = roomId;
+        else window.location.hash = '';
+      }, [roomId]);
+
+      useEffect(() => {
+        if (!room || !user || !roomId || room.state !== 'revealed') return;
+        const activeCount = room.players.length;
+        if (room.replayVotes?.length >= activeCount) resetGame(true);
+        else if (room.restartVotes?.length >= activeCount) resetGame(false);
+      }, [room?.replayVotes, room?.restartVotes, room?.state, room?.players.length]);
+
+      const createRoom = async () => {
+        if (!nickname) return;
+        const newRoomId = generateRoomCode();
+        await setDoc(doc(db, 'rooms', newRoomId), {
+          hostId: user.uid,
+          state: 'settings',
+          settings: { maxPlayers: 4, mode: 'อิสระ' },
+          players: [{ uid: user.uid, name: nickname, word: '', order: 1 }],
+          category: '', replayVotes: [], restartVotes: []
+        });
+        setRoomId(newRoomId);
+      };
+
+      const joinRoom = async () => {
+        if (!nickname || !roomCodeInput) return;
+        setRoomId(roomCodeInput);
+        const docRef = doc(db, 'rooms', roomCodeInput);
+        const unsub = onSnapshot(docRef, async (snap) => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (!data.players.find(p => p.uid === user.uid) && data.players.length < data.settings.maxPlayers) {
+               await updateDoc(docRef, { players: [...data.players, { uid: user.uid, name: nickname, word: '', order: data.players.length + 1 }] });
+            }
+          }
+          unsub();
+        });
+      };
+
+      const updateSetting = async (key, val) => {
+        if (room.hostId === user.uid) await updateDoc(doc(db, 'rooms', roomId), { [`settings.${key}`]: val });
+      };
+
+      const startGameSequence = async () => {
+        if (room.settings.mode === 'หมวดหมู่') await updateDoc(doc(db, 'rooms', roomId), { state: 'spinning' });
+        else assignWordsAndStart(null);
+      };
+
+      const assignWordsAndStart = async (selectedCategory) => {
+        let pool = [];
+        let catText = selectedCategory || 'อิสระ';
+        if (selectedCategory) pool = CATEGORIES[selectedCategory];
+        else Object.values(CATEGORIES).forEach(words => pool.push(...words));
+
+        const shuffledPool = [...pool].sort(() => 0.5 - Math.random());
+        const newPlayers = room.players.map((p, idx) => ({ ...p, word: shuffledPool[idx % shuffledPool.length] }));
+
+        await updateDoc(doc(db, 'rooms', roomId), { players: newPlayers, category: catText, state: 'pregame', replayVotes: [], restartVotes: [] });
+        setTimeout(async () => { await updateDoc(doc(db, 'rooms', roomId), { state: 'playing' }); }, 2000);
+      };
+
+      const handleVote = async (type) => {
+        const voteArr = room[type] || [];
+        if (!voteArr.includes(user.uid)) await updateDoc(doc(db, 'rooms', roomId), { [type]: [...voteArr, user.uid] });
+      };
+
+      const resetGame = async (keepSettings) => {
+         if (room.hostId !== user.uid) return;
+         if (keepSettings) startGameSequence();
+         else await updateDoc(doc(db, 'rooms', roomId), { state: 'settings', category: '', replayVotes: [], restartVotes: [], players: room.players.map(p => ({...p, word: ''})) });
+      };
+
+      if (!user) return <div className="min-h-screen bg-black text-white flex items-center justify-center">กำลังโหลด...</div>;
+
+      if (!roomId || !room) {
+        return (
+          <BackgroundWrapper>
+            <div className="flex flex-col items-center justify-center min-h-screen p-6 w-full max-w-md mx-auto z-10 relative">
+              <h1 className="text-5xl font-black text-white mb-10 tracking-widest" style={{transform: 'scaleY(1.3)'}}>คำต้องห้าม</h1>
+              <div className="w-full space-y-6 bg-black/60 p-6 rounded-2xl backdrop-blur-md">
+                <div>
+                  <label className="text-gray-300 block mb-2 font-bold">ชื่อเล่นของคุณ:</label>
+                  <input type="text" value={nickname} onChange={e => setNickname(e.target.value)} className="w-full p-4 rounded-xl text-black font-bold text-lg text-center" placeholder="กรอกชื่อ..." />
+                </div>
+                <button onClick={createRoom} disabled={!nickname} className="w-full bg-white text-black font-bold py-4 rounded-xl text-xl disabled:opacity-50">สร้างห้อง (HOST)</button>
+                <div className="relative flex py-4 items-center">
+                    <div className="flex-grow border-t border-gray-500"></div><span className="flex-shrink-0 mx-4 text-gray-500 font-bold">หรือ</span><div className="flex-grow border-t border-gray-500"></div>
+                </div>
+                <div className="flex space-x-2">
+                  <input type="text" value={roomCodeInput} onChange={e => setRoomCodeInput(e.target.value.toUpperCase())} className="w-2/3 p-4 rounded-xl text-black font-bold text-center uppercase tracking-widest text-xl" placeholder="รหัสห้อง" maxLength={4} />
+                  <button onClick={joinRoom} disabled={!nickname || roomCodeInput.length < 4} className="w-1/3 bg-blue-600 text-white font-bold rounded-xl text-lg disabled:opacity-50">เข้าร่วม</button>
+                </div>
+              </div>
+            </div>
+          </BackgroundWrapper>
+        );
+      }
+
+      const isHost = room.hostId === user.uid;
+
+      if (room.state === 'settings') {
+        return (
+          <BackgroundWrapper>
+            <div className="flex flex-col min-h-screen p-6 w-full max-w-md mx-auto z-10 relative">
+               <h1 className="text-4xl font-black text-white mt-10 mb-2 text-center tracking-widest" style={{transform: 'scaleY(1.3)'}}>คำต้องห้าม</h1>
+               <p className="text-center text-gray-400 mb-8 font-mono tracking-widest">ROOM: {roomId}</p>
+               {isHost ? (
+                 <div className="flex-1 space-y-8 mt-4 bg-black/60 p-6 rounded-3xl backdrop-blur-md">
+                   <div>
+                      <h3 className="text-white text-lg mb-3 font-bold">จำนวนผู้เล่น</h3>
+                      <div className="flex space-x-3">
+                        {[2,3,4].map(num => (
+                          <button key={num} onClick={() => updateSetting('maxPlayers', num)} className={`flex-1 py-3 rounded-full font-bold text-lg transition ${room.settings.maxPlayers === num ? 'bg-white text-black' : 'bg-gray-800 text-gray-400'}`}>{num}</button>
+                        ))}
+                      </div>
+                   </div>
+                   <div>
+                      <h3 className="text-white text-lg mb-3 font-bold">รูปแบบคำ</h3>
+                      <div className="flex space-x-3">
+                        {['อิสระ', 'หมวดหมู่'].map(mode => (
+                          <button key={mode} onClick={() => updateSetting('mode', mode)} className={`flex-1 py-3 rounded-full font-bold text-lg transition ${room.settings.mode === mode ? 'bg-white text-black' : 'bg-gray-800 text-gray-400'}`}>{mode}</button>
+                        ))}
+                      </div>
+                   </div>
+                   <div className="pt-8">
+                     <button onClick={startGameSequence} className="w-full bg-white text-black font-black py-5 rounded-2xl text-2xl shadow-[0_0_20px_rgba(255,255,255,0.4)] active:scale-95 transition">เริ่มเกม</button>
+                     <p className="text-center text-gray-400 mt-4">ผู้เล่นเข้าร่วมแล้ว: {room.players.length}/{room.settings.maxPlayers}</p>
+                   </div>
+                 </div>
+               ) : (
+                 <div className="flex-1 flex flex-col items-center justify-center">
+                    <div className="bg-black/60 p-10 rounded-3xl backdrop-blur-md text-center">
+                      <div className="w-16 h-16 border-4 border-t-white border-gray-600 rounded-full animate-spin mx-auto mb-6"></div>
+                      <h2 className="text-3xl text-white font-bold">รอสักครู่</h2>
+                      <p className="text-gray-400 mt-2">โฮสต์กำลังตั้งค่าเกม</p>
+                    </div>
+                 </div>
+               )}
+            </div>
+          </BackgroundWrapper>
+        );
+      }
+
+      if (room.state === 'spinning') {
+        return (
+          <BackgroundWrapper>
+             <div className="flex flex-col min-h-screen justify-center items-center w-full max-w-md mx-auto p-4 z-10 relative">
+                <h2 className="text-white text-2xl font-bold mb-8">เลือกหมวดหมู่</h2>
+                {isHost ? <WheelSpinner items={CATEGORY_KEYS} onLock={(item) => assignWordsAndStart(item)} /> : <div className="text-white text-xl">กำลังสุ่มหมวดหมู่...</div>}
+             </div>
+          </BackgroundWrapper>
+        );
+      }
+
+      if (room.state === 'pregame') {
+         return (
+            <BackgroundWrapper>
+               <div className="flex min-h-screen items-center justify-center z-10 relative">
+                  <h1 className="text-4xl text-white font-black text-center px-4 leading-relaxed animate-pulse">
+                    คำในหมวด<br/><span className="text-6xl text-yellow-400 mt-4 block">"{room.category}"</span>
+                  </h1>
+               </div>
+            </BackgroundWrapper>
+         );
+      }
+
+      return (
+        <BackgroundWrapper>
+           <div className="flex flex-col min-h-screen w-full max-w-lg mx-auto p-4 z-10 relative">
+              <div className="flex justify-between items-center mb-6 mt-4">
+                 <h2 className="text-white text-xl font-bold tracking-wider">{room.category}</h2><span className="text-gray-400 text-sm">ROOM: {roomId}</span>
+              </div>
+              <div className="flex-1 flex items-center justify-center">
+                 <CardGrid players={room.players} currentUser={user} state={room.state} />
+              </div>
+              {room.state === 'playing' && isHost && (
+                 <button onClick={() => updateDoc(doc(db, 'rooms', roomId), { state: 'revealed' })} className="mt-6 bg-white text-black font-bold py-4 rounded-xl text-xl w-full">เปิดการ์ด (Host)</button>
+              )}
+              {room.state === 'revealed' && (
+                 <div className="mt-6 bg-black/60 p-4 rounded-2xl backdrop-blur-md w-full space-y-3">
+                    <p className="text-center text-white mb-2 font-bold">จบตาแล้ว กดโหวตเพื่อไปต่อ</p>
+                    <div className="flex space-x-3">
+                       <button onClick={() => handleVote('replayVotes')} className={`flex-1 py-4 rounded-xl font-bold text-lg transition ${room.replayVotes?.includes(user.uid) ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>เล่นใหม่</button>
+                       <button onClick={() => handleVote('restartVotes')} className={`flex-1 py-4 rounded-xl font-bold text-lg transition ${room.restartVotes?.includes(user.uid) ? 'bg-red-600 text-white' : 'bg-gray-700 text-white'}`}>เริ่มใหม่</button>
+                    </div>
+                 </div>
+              )}
+           </div>
+        </BackgroundWrapper>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
