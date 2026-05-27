@@ -90,7 +90,7 @@
 
     // --- COMPONENTS ---
     const BackgroundWrapper = ({ children }) => (
-      <div className="relative min-h-screen overflow-hidden bg-gray-900 select-none">
+      <div className="relative h-[100dvh] w-screen overflow-hidden bg-gray-900 select-none">
         <div 
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
@@ -172,7 +172,7 @@
              <div className="absolute bottom-0 w-full h-[20%] bg-gradient-to-t from-black to-transparent z-10 pointer-events-none"></div>
              <div className="absolute top-1/2 left-0 w-full h-[70px] -mt-[35px] border-y-2 border-yellow-400 bg-yellow-400/10 z-0 pointer-events-none"></div>
 
-             <div className="absolute top-1/2 left-0 w-full transition-transform duration-75 ease-linear" style={{ transform: `translateY(${-offset}px)` }}>
+             <div className="absolute top-1/2 left-0 w-full transition-transform duration-75 ease-linear" style={{ transform: `translateY(calc(140px - ${offset}px))` }}>
                {extendedItems.map((item, idx) => (
                  <div key={idx} className="h-[70px] flex items-center justify-center text-3xl font-bold text-white text-center">{item}</div>
                ))}
@@ -190,32 +190,41 @@
       );
     };
 
-    const CardGrid = ({ players, currentUser, state }) => {
+    const CardGrid = ({ players, currentUser, state, isDarkMode }) => {
        const count = players.length;
-       // Responsive 2x2 grid. Fits mobile width, and desktop height.
-       let gridClass = "grid gap-3 w-full max-w-3xl mx-auto h-[75vh] " + 
-           (count <= 2 ? "grid-cols-1 grid-rows-2 max-w-[250px]" : "grid-cols-2 grid-rows-2");
+       let gridClass = "grid gap-3 w-full h-full max-w-3xl mx-auto " + (count <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2");
+       const cardBg = isDarkMode ? 'bg-black text-white border-gray-600' : 'bg-white text-black border-gray-300';
+       const wordColor = isDarkMode ? 'text-white' : 'text-black';
 
        return (
           <div className={gridClass}>
              {players.map((p) => {
                 const isMe = p.uid === currentUser.uid;
-                const itemClass = `flex justify-center items-center ${count === 3 && p.order === 3 ? 'col-span-2' : ''}`;
+                const itemClass = `flex justify-center items-center h-full w-full ${count === 3 && p.order === 3 ? 'col-span-2' : ''}`;
                 
                 return (
                    <div key={p.uid} className={itemClass}>
-                      <div className={`relative w-full h-full max-h-[40vh] aspect-[2.5/3.5] bg-white rounded-3xl shadow-2xl flex flex-col items-center justify-center p-4 border-4 ${isMe ? 'border-yellow-400' : 'border-gray-300'}`}>
-                         <div className="absolute inset-2 border-2 border-dashed border-gray-300 rounded-2xl opacity-50 pointer-events-none"></div>
-                         <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
-                         
-                         <div className="flex-1 flex items-center justify-center w-full z-10">
-                             {isMe ? 
-                               <span className="text-gray-400 italic text-center font-bold text-lg">(คำของคุณถูกซ่อน)</span> 
-                               : 
-                               <span className="text-4xl md:text-5xl font-black text-red-600 text-center break-words leading-tight">{p.word}</span>
-                             }
-                         </div>
-                         {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                      <div className={`relative flex flex-col items-center justify-center p-4 border-4 transition-all duration-300 rounded-3xl shadow-2xl aspect-[2.5/3.5] h-full max-h-[38vh] w-auto ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}>
+                         {state === 'playing' ? (
+                            <>
+                               <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
+                               <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
+                               {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                            </>
+                         ) : (
+                            <>
+                               <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
+                               <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
+                               <div className="flex-1 flex items-center justify-center w-full z-10">
+                                   {isMe ? 
+                                     <span className="text-gray-400 italic text-center font-bold text-lg">(คำของคุณถูกซ่อน)</span> 
+                                     : 
+                                     <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
+                                   }
+                               </div>
+                               {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                            </>
+                         )}
                       </div>
                    </div>
                 );
@@ -231,6 +240,7 @@
       const [roomCodeInput, setRoomCodeInput] = useState('');
       const [room, setRoom] = useState(null);
       const [roomId, setRoomId] = useState(null);
+      const [isDarkMode, setIsDarkMode] = useState(false);
 
       useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -353,6 +363,13 @@
                   <button onClick={joinRoom} disabled={!nickname || roomCodeInput.length < 1} className="w-1/3 bg-blue-600 text-white font-bold rounded-xl text-lg disabled:opacity-50">เข้าร่วม</button>
                 </div>
               </div>
+              
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)} 
+                className="absolute bottom-8 right-6 w-14 h-14 flex items-center justify-center bg-gray-800 text-2xl rounded-full shadow-lg border border-gray-600 z-50 transition-transform active:scale-95"
+              >
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
             </div>
           </BackgroundWrapper>
         );
@@ -433,19 +450,27 @@
       };
       const handlePointerUp = () => { if (pressTimer) clearTimeout(pressTimer); };
 
+      const categoryText = room.category === 'อิสระ' ? 'คำอิสระ' : `คำในหมวด: ${room.category}`;
+
       return (
         <BackgroundWrapper>
-           <div className="flex flex-col min-h-screen w-full mx-auto p-4 z-10 relative">
-              <div className="flex justify-between items-center mb-4 mt-2 max-w-3xl mx-auto w-full">
-                 <h2 className="text-white text-xl font-bold tracking-wider">{room.category}</h2><span className="text-gray-400 text-sm">ห้อง: {roomId}</span>
+           <div className="flex flex-col h-[100dvh] w-full mx-auto p-4 z-10 relative overflow-hidden">
+              <div className="flex justify-between items-center mb-2 mt-2 max-w-3xl mx-auto w-full flex-shrink-0">
+                 <h2 className="text-white text-xl font-bold tracking-wider">{categoryText}</h2><span className="text-gray-400 text-sm">ห้อง: {roomId}</span>
               </div>
               
-              <div className="flex-1 flex items-center justify-center w-full">
-                 <CardGrid players={room.players} currentUser={user} state={room.state} />
+              <div className="flex-1 flex items-center justify-center w-full min-h-0">
+                 <CardGrid players={room.players} currentUser={user} state={room.state} isDarkMode={isDarkMode} />
               </div>
 
-              {room.state === 'playing' && (
-                 <div className="mt-4 bg-black/60 p-4 rounded-3xl backdrop-blur-md w-full max-w-3xl mx-auto space-y-3 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+              {room.state === 'playing' && isHost && (
+                 <div className="flex-shrink-0 mt-4 mb-2 max-w-3xl mx-auto w-full">
+                    <button onClick={() => updateDoc(doc(db, 'rooms', roomId), { state: 'revealed' })} className="bg-blue-600 text-white font-bold py-4 rounded-xl text-xl w-full shadow-lg active:scale-95 transition-transform">เปิดไพ่</button>
+                 </div>
+              )}
+
+              {room.state === 'revealed' && (
+                 <div className="flex-shrink-0 mt-4 mb-2 bg-black/60 p-4 rounded-3xl backdrop-blur-md w-full max-w-3xl mx-auto space-y-3 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
                     <p className="text-center text-white mb-2 font-bold text-lg">โหวตตาต่อไป</p>
                     <div className="flex space-x-3">
                        <button 
