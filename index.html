@@ -106,8 +106,6 @@
       }
     };
 
-    const generateRoomCode = () => Math.floor(Math.random() * 10).toString();
-
     // --- COMPONENTS ---
     const BackgroundWrapper = ({ children }) => (
       <div className="relative h-[100dvh] w-screen overflow-hidden bg-gray-900 select-none">
@@ -545,6 +543,8 @@
           </BackgroundWrapper>
         );
       }
+
+      const isHost = room.hostId === user.uid;
 
       if (room.state === 'settings') {
         return (
