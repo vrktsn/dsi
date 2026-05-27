@@ -17,7 +17,7 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
-    body { font-family: sans-serif; background-color: #000; overscroll-behavior-y: none; }
+    body { font-family: 'Kanit', sans-serif; background-color: #000; overscroll-behavior-y: none; }
   </style>
 </head>
 <body>
@@ -66,6 +66,25 @@
     };
     const CATEGORY_KEYS = Object.keys(CATEGORIES);
 
+    const CATEGORIES_EN = {
+      "Work": ["Boss", "Meeting", "Salary", "Sick Leave", "Fingerprint", "Overtime", "Client", "Email", "Report", "Present"],
+      "School": ["Homework", "Exam", "Teacher", "Line Up", "Skip Class", "PE", "Blackboard", "Pencil", "Lunch Break", "Report Card"],
+      "Home": ["Sweep", "Wash Dishes", "Remote", "Sofa", "Bed", "Fridge", "Hanger", "Towel", "Soap", "Trash Can"],
+      "Food/Drink": ["Coffee", "Boba Tea", "Papaya Salad", "BBQ", "Pizza", "Ice", "Chicken Rice", "Basil Stir-fry", "Spicy Salad", "Buffet"],
+      "Internet": ["WiFi", "Password", "Disconnect", "Lag", "Share", "Like", "Block", "Virus", "Hacker", "Link"],
+      "Sports": ["Football", "Run", "Swim", "Badminton", "Boxing", "Gold Medal", "Referee", "Offside", "Match", "Yoga"],
+      "Animals": ["Dog", "Cat", "Elephant", "Snake", "Bird", "Tiger", "Fish", "Crocodile", "Mosquito", "Cockroach"],
+      "Travel": ["Beach", "Mountain", "Flight Ticket", "Luggage", "Hotel", "Map", "Passport", "Train", "Take Photo", "Souvenir"],
+      "Vehicles": ["Bus", "Motorcycle", "Taxi", "Boat", "Airplane", "Train", "Bicycle", "Helicopter", "Van", "Truck"],
+      "Clothing": ["Jeans", "T-Shirt", "Skirt", "Sneakers", "Socks", "Hat", "Glasses", "Watch", "Bag", "Belt"],
+      "Movies": ["Actor", "Actress", "Director", "Popcorn", "Movie Ticket", "Subtitles", "Spoiler", "Ending", "Ghost", "Comedy"],
+      "Music": ["Sing", "Guitar", "Drum", "Microphone", "Headphones", "Concert", "Lyrics", "Dance", "Folk Song", "Rap"],
+      "Health": ["Doctor", "Medicine", "Hospital", "Fever", "Headache", "Cough", "Blood", "Snot", "Wound", "Weight"],
+      "Appliances": ["Fan", "Air Con", "TV", "Washing Machine", "Iron", "Rice Cooker", "Microwave", "Plug", "Hair Dryer", "Speaker"],
+      "Love": ["Boyfriend/Girlfriend", "Marriage", "Flirt", "Heartbreak", "Argue", "Hug", "Kiss", "Rose", "Confess", "Cheat"]
+    };
+    const CATEGORY_KEYS_EN = Object.keys(CATEGORIES_EN);
+
     const playDing = () => {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -104,7 +123,7 @@
       </div>
     );
 
-    const WheelSpinner = ({ items, onLock }) => {
+    const WheelSpinner = ({ items, onLock, lang = 'TH' }) => {
       const scrollRef = useRef(0);
       const velocityRef = useRef(0);
       const isDraggingRef = useRef(false);
@@ -147,7 +166,6 @@
         if (!isDraggingRef.current || locked || spinCount >= 2) return;
         isDraggingRef.current = false;
         
-        // Count as a spin only if flicked hard enough
         if (Math.abs(velocityRef.current) > 2) {
            setSpinCount(prev => prev + 1);
         }
@@ -187,6 +205,10 @@
          }
       };
 
+      const statusText = spinCount >= 2 
+         ? (lang === 'TH' ? 'สุ่มครบโควต้าแล้ว กด START เพื่อไปต่อ' : 'Quota reached. Press START to continue.')
+         : (lang === 'TH' ? `ปัดเพื่อสุ่ม (เหลือสิทธิ์สุ่มอีก ${2 - spinCount} ครั้ง)` : `Swipe to spin (${2 - spinCount} spins left)`);
+
       return (
         <div className="w-full flex flex-col items-center">
            <div 
@@ -213,19 +235,19 @@
                 className="w-full bg-white text-black font-black py-5 rounded-2xl text-2xl disabled:opacity-50 active:scale-95 transition"
              >START</button>
              <p className="text-gray-400 text-center mt-4">
-               {spinCount >= 2 ? 'สุ่มครบโควต้าแล้ว กด START เพื่อไปต่อ' : `ปัดเพื่อสุ่ม (เหลือสิทธิ์สุ่มอีก ${2 - spinCount} ครั้ง)`}
+               {statusText}
              </p>
            </div>
         </div>
       );
     };
 
-    const CardGrid = ({ players, currentUser, state, isDarkMode }) => {
+    const CardGrid = ({ players, currentUser, state, isDarkMode, lang = 'TH' }) => {
        const count = players.length;
        let gridClass = "grid gap-2 sm:gap-4 w-full h-full max-w-4xl mx-auto p-2 " + (count <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2");
        
-       const cardBg = isDarkMode ? 'bg-gray-900 text-white border-gray-700' : 'bg-white text-black border-gray-300';
-       const wordColor = isDarkMode ? 'text-red-400' : 'text-black';
+       const cardBg = isDarkMode ? 'bg-black text-white border-gray-800' : 'bg-white text-black border-gray-300';
+       const wordColor = isDarkMode ? 'text-white' : 'text-black';
        const shadowColor = isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.2)';
 
        return (
@@ -239,37 +261,24 @@
                    <div key={p.uid} className={`${itemClass} [perspective:1500px]`}>
                       <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'}`}>
                          
-                         {/* FRONT OF CARD (Unrevealed, shows Name) */}
+                         {/* FRONT OF CARD */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
-                              style={{ 
-                                 boxShadow: `-4px 6px 0px ${shadowColor}`,
-                                 WebkitBackfaceVisibility: 'hidden',
-                                 backfaceVisibility: 'hidden',
-                                 zIndex: isFlipped ? 1 : 10,
-                                 opacity: isFlipped ? 0 : 1
-                              }}
+                              style={{ boxShadow: `-4px 6px 0px ${shadowColor}`, WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', zIndex: isFlipped ? 1 : 10, opacity: isFlipped ? 0 : 1 }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
                             {!isFlipped && (
                                <>
                                   <h3 className="text-3xl font-black z-10 break-words text-center">{p.name}</h3>
-                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
                                </>
                             )}
                          </div>
 
-                         {/* BACK OF CARD (Revealed, shows Word) */}
+                         {/* BACK OF CARD */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
-                              style={{ 
-                                 boxShadow: `4px 6px 0px ${shadowColor}`,
-                                 transform: 'rotateY(180deg)',
-                                 WebkitBackfaceVisibility: 'hidden',
-                                 backfaceVisibility: 'hidden',
-                                 zIndex: isFlipped ? 10 : 1,
-                                 opacity: isFlipped ? 1 : 0
-                              }}
+                              style={{ boxShadow: `4px 6px 0px ${shadowColor}`, transform: 'rotateY(180deg)', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden', zIndex: isFlipped ? 10 : 1, opacity: isFlipped ? 1 : 0 }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400 rounded-2xl opacity-50 pointer-events-none"></div>
                             {isFlipped && (
@@ -277,16 +286,15 @@
                                   <span className="absolute top-4 text-sm font-bold text-gray-500 uppercase z-10">{p.name}</span>
                                   <div className="flex-1 flex items-center justify-center w-full z-10">
                                       {isMe ? 
-                                        <span className="text-gray-400 italic text-center font-bold text-lg">(ซ่อน)</span> 
+                                        <span className="text-gray-400 italic text-center font-bold text-lg">{lang === 'TH' ? '(ซ่อน)' : '(Hidden)'}</span> 
                                         : 
                                         <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
                                       }
                                   </div>
-                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">คุณ</span>}
+                                  {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
                                </>
                             )}
                          </div>
-
                       </div>
                    </div>
                 );
@@ -298,11 +306,12 @@
     // --- MAIN APP ---
     function App() {
       const [user, setUser] = useState(null);
-      const [nickname, setNickname] = useState('');
+      const [nickname, setNickname] = useState(() => localStorage.getItem('nickname') || '');
       const [roomCodeInput, setRoomCodeInput] = useState('');
       const [room, setRoom] = useState(null);
       const [roomId, setRoomId] = useState(null);
       const [isDarkMode, setIsDarkMode] = useState(false);
+      const [lang, setLang] = useState('TH');
 
       useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -376,9 +385,11 @@
 
       const assignWordsAndStart = async (selectedCategory) => {
         let pool = [];
-        let catText = selectedCategory || 'อิสระ';
-        if (selectedCategory) pool = CATEGORIES[selectedCategory];
-        else Object.values(CATEGORIES).forEach(words => pool.push(...words));
+        let catText = selectedCategory || (lang === 'TH' ? 'อิสระ' : 'Random');
+        const activeCategories = lang === 'TH' ? CATEGORIES : CATEGORIES_EN;
+
+        if (selectedCategory) pool = activeCategories[selectedCategory];
+        else Object.values(activeCategories).forEach(words => pool.push(...words));
 
         const shuffledPool = [...pool].sort(() => 0.5 - Math.random());
         const newPlayers = room.players.map((p, idx) => ({ ...p, word: shuffledPool[idx % shuffledPool.length] }));
@@ -407,24 +418,29 @@
       if (!user) return <div className="min-h-screen bg-black text-white flex items-center justify-center">กำลังโหลด...</div>;
 
       if (!roomId || !room) {
-        const inputBg = isDarkMode ? 'bg-gray-200 text-black' : 'bg-white text-black';
+        const inputBg = isDarkMode ? 'bg-gray-400 text-black placeholder-gray-600' : 'bg-white text-black placeholder-gray-400';
         
         return (
           <BackgroundWrapper>
             <div className="flex flex-col items-center justify-center min-h-screen p-4 w-full max-w-md mx-auto z-10 relative">
-              <h1 className="text-6xl font-black text-white mb-8 tracking-wider font-['Kanit']">คำต้องห้าม</h1>
+              <h1 className="text-6xl font-black text-white mb-8 tracking-wider">
+                {lang === 'TH' ? 'คำต้องห้าม' : 'Taboo'}
+              </h1>
               
               <div className="w-full bg-black/60 p-6 rounded-3xl backdrop-blur-md shadow-2xl">
                 <input 
                   type="text" 
                   value={nickname} 
-                  onChange={e => setNickname(e.target.value)}
+                  onChange={e => {
+                    setNickname(e.target.value);
+                    localStorage.setItem('nickname', e.target.value);
+                  }}
                   className={`w-full p-4 rounded-2xl font-bold text-xl text-center mb-6 transition-colors ${inputBg}`}
-                  placeholder="ใส่ชื่อเล่น"
+                  placeholder={lang === 'TH' ? 'ใส่ชื่อเล่น' : 'Enter Nickname'}
                 />
                 
                 <div className="mb-8">
-                  <p className="text-gray-300 text-center font-bold mb-3">เลือกห้อง</p>
+                  <p className="text-gray-300 text-center font-bold mb-3">{lang === 'TH' ? 'เลือกห้อง' : 'Select Room'}</p>
                   <div className="flex space-x-3 justify-center">
                     {['1', '2', '3', '4'].map(num => (
                       <button 
@@ -444,19 +460,25 @@
                     disabled={!nickname || !roomCodeInput}
                     className="flex-1 bg-white text-black font-black py-4 rounded-2xl text-xl disabled:opacity-50 active:scale-95 transition shadow-lg"
                    >
-                     สร้างห้อง
+                     {lang === 'TH' ? 'สร้างห้อง' : 'Create'}
                    </button>
                    <button 
                     onClick={joinRoom}
                     disabled={!nickname || !roomCodeInput}
                     className="flex-1 bg-blue-600 text-white font-black py-4 rounded-2xl text-xl disabled:opacity-50 active:scale-95 transition shadow-lg"
                    >
-                     เข้าร่วม
+                     {lang === 'TH' ? 'เข้าร่วม' : 'Join'}
                    </button>
                 </div>
               </div>
 
-              <div className="w-full flex justify-end mt-4">
+              <div className="w-full flex justify-end mt-4 space-x-3">
+                <button 
+                  onClick={() => setLang(lang === 'TH' ? 'EN' : 'TH')} 
+                  className="w-14 h-14 flex items-center justify-center bg-gray-800 text-white font-bold text-xl rounded-full shadow-lg border border-gray-600 z-50 transition-transform active:scale-95"
+                >
+                  {lang}
+                </button>
                 <button 
                   onClick={() => setIsDarkMode(!isDarkMode)} 
                   className="w-14 h-14 flex items-center justify-center bg-gray-800 text-2xl rounded-full shadow-lg border border-gray-600 z-50 transition-transform active:scale-95"
