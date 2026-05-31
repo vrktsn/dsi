@@ -83,7 +83,10 @@
       "Appliances": ["Fan", "Air Con", "TV", "Washing Machine", "Iron", "Rice Cooker", "Microwave", "Plug", "Hair Dryer", "Speaker"],
       "Love": ["Boyfriend/Girlfriend", "Marriage", "Flirt", "Heartbreak", "Argue", "Hug", "Kiss", "Rose", "Confess", "Cheat"]
     };
-    const CATEGORY_KEYS_EN = Object.keys(CATEGORIES_EN);
+        const CATEGORY_KEYS_EN = Object.keys(CATEGORIES_EN);
+
+    const RANDOM_WORDS_TH = ["สบู่", "ยาสีฟัน", "ผ้าเช็ดตัว", "รองเท้า", "กระเป๋า", "กุญแจ", "โทรศัพท์", "หมอน", "ผ้าห่ม", "เก้าอี้", "โต๊ะ", "ปากกา", "สมุด", "แก้วน้ำ", "จาน", "ช้อน", "ส้อม", "พัดลม", "แว่นตา", "นาฬิกา", "ร่ม", "กระดาษทิชชู่", "ไฟฉาย", "ไม้กวาด", "ถังขยะ"];
+    const RANDOM_WORDS_EN = ["Soap", "Toothpaste", "Towel", "Shoes", "Bag", "Keys", "Phone", "Pillow", "Blanket", "Chair", "Table", "Pen", "Notebook", "Glass", "Plate", "Spoon", "Fork", "Fan", "Glasses", "Watch", "Umbrella", "Tissue", "Flashlight", "Broom", "Trash Can"];
 
     const playDing = () => {
       try {
@@ -170,8 +173,12 @@
         momentumLoop();
       };
 
-      const momentumLoop = () => {
+            const momentumLoop = () => {
          if (isDraggingRef.current) return;
+         
+         const maxScroll = (extendedItems.length - 1) * itemHeight;
+         if (scrollRef.current < 0) scrollRef.current = 0;
+         if (scrollRef.current > maxScroll) scrollRef.current = maxScroll;
          
          const snapIndex = Math.round(scrollRef.current / itemHeight);
          const targetScroll = snapIndex * itemHeight;
@@ -246,18 +253,25 @@
        
        const cardBg = isDarkMode ? 'bg-black text-white border-gray-800' : 'bg-white text-black border-gray-300';
        const wordColor = isDarkMode ? 'text-white' : 'text-black';
+       const CardGrid = ({ players, currentUser, state, flipTime, isDarkMode, lang = 'TH' }) => {
+       const count = players.length;
+       let gridClass = "grid gap-2 sm:gap-4 w-full h-full max-w-4xl mx-auto p-2 " + (count <= 2 ? "grid-cols-1 grid-rows-2" : "grid-cols-2 grid-rows-2");
+       
+       const cardBg = isDarkMode ? 'bg-black text-white border-gray-800' : 'bg-white text-black border-gray-300';
+       const wordColor = isDarkMode ? 'text-white' : 'text-black';
        const shadowColor = isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.2)';
 
-       // Network sync buffer: Waits 800ms before flipping so all devices execute simultaneously
+       // Time-synced flip based on host command + 1500ms network buffer
        const [syncedFlip, setSyncedFlip] = useState(false);
        useEffect(() => {
           if (state === 'revealed') {
-             const timer = setTimeout(() => setSyncedFlip(true), 800);
+             const delay = flipTime ? Math.max(0, flipTime - Date.now()) : 800;
+             const timer = setTimeout(() => setSyncedFlip(true), delay);
              return () => clearTimeout(timer);
           } else {
              setSyncedFlip(false);
           }
-       }, [state]);
+       }, [state, flipTime]);
 
        return (
           <div className={gridClass}>
@@ -277,9 +291,9 @@
                                   boxShadow: `-4px 6px 0px ${shadowColor}`, 
                                   WebkitBackfaceVisibility: 'hidden', 
                                   backfaceVisibility: 'hidden',
-                                  transform: 'translateZ(1px)', // Forces iOS Safari to strictly layer the front face
+                                  transform: 'translateZ(1px)',
                                   opacity: isFlipped ? 0 : 1,
-                                  transition: 'opacity 0.3s ease-in-out 0.2s' // Smooth crossfade mid-flip to prevent blinking
+                                  transition: 'opacity 0.3s ease-in-out 0.2s'
                               }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400/50 rounded-2xl pointer-events-none"></div>
@@ -292,11 +306,11 @@
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
                               style={{ 
                                   boxShadow: `4px 6px 0px ${shadowColor}`, 
-                                  transform: 'rotateY(180deg) translateZ(1px)', // Forces iOS Safari to strictly layer the back face
+                                  transform: 'rotateY(180deg) translateZ(1px)',
                                   WebkitBackfaceVisibility: 'hidden', 
                                   backfaceVisibility: 'hidden',
                                   opacity: isFlipped ? 1 : 0,
-                                  transition: 'opacity 0.3s ease-in-out 0.2s' // Smooth crossfade mid-flip to prevent blinking
+                                  transition: 'opacity 0.3s ease-in-out 0.2s'
                               }}
                          >
                             <div className="absolute inset-2 border-2 border-dashed border-gray-400/50 rounded-2xl pointer-events-none"></div>
@@ -305,7 +319,10 @@
                                 {isMe ? 
                                   <span className="text-gray-400 italic text-center font-bold text-lg">{lang === 'TH' ? '(ซ่อน)' : '(Hidden)'}</span> 
                                   : 
-                                  <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>{p.word}</span>
+                                  /* Removing the word completely from the DOM until syncedFlip is true guarantees 0% iOS bleeding */
+                                  <span className={`text-4xl md:text-5xl font-black text-center break-words leading-tight ${wordColor}`}>
+                                    {syncedFlip ? p.word : ""}
+                                  </span>
                                 }
                             </div>
                             {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
@@ -317,6 +334,7 @@
           </div>
        );
     };
+
 
     // --- MAIN APP ---
     function App() {
@@ -409,13 +427,16 @@
         else assignWordsAndStart(null);
       };
 
-      const assignWordsAndStart = async (selectedCategory) => {
+            const assignWordsAndStart = async (selectedCategory) => {
         let pool = [];
         let catText = selectedCategory || (lang === 'TH' ? 'อิสระ' : 'Random');
         const activeCategories = lang === 'TH' ? CATEGORIES : CATEGORIES_EN;
 
-        if (selectedCategory) pool = activeCategories[selectedCategory];
-        else Object.values(activeCategories).forEach(words => pool.push(...words));
+        if (selectedCategory) {
+           pool = activeCategories[selectedCategory];
+        } else {
+           pool = lang === 'TH' ? RANDOM_WORDS_TH : RANDOM_WORDS_EN;
+        }
 
         const shuffledPool = [...pool].sort(() => 0.5 - Math.random());
         const newPlayers = room.players.map((p, idx) => ({ ...p, word: shuffledPool[idx % shuffledPool.length] }));
@@ -423,6 +444,7 @@
         await updateDoc(doc(db, 'rooms', roomId), { players: newPlayers, category: catText, state: 'pregame', replayVotes: [], restartVotes: [] });
         setTimeout(async () => { await updateDoc(doc(db, 'rooms', roomId), { state: 'playing' }); }, 2000);
       };
+
 
       const handleVote = async (type) => {
         const otherType = type === 'replayVotes' ? 'restartVotes' : 'replayVotes';
@@ -576,16 +598,16 @@
               </div>
               
               <div className="flex-1 flex items-center justify-center w-full min-h-0">
-                 <CardGrid players={room.players} currentUser={user} state={room.state} isDarkMode={isDarkMode} lang={lang} />
-              </div>
-
-              {room.state === 'playing' && isHost && (
-                 <div className="flex-shrink-0 mt-4 mb-2 max-w-3xl mx-auto w-full">
-                    <button onClick={() => updateDoc(doc(db, 'rooms', roomId), { state: 'revealed' })} className="bg-blue-600 text-white font-bold py-4 rounded-xl text-xl w-full shadow-lg active:scale-95 transition-transform">
-                      {lang === 'TH' ? 'เปิดไพ่' : 'Reveal Cards'}
-                    </button>
-                 </div>
-              )}
+                 <CardGrid... 'playing'...<CardGrid ```javascript{room.state="==" and block button currentUser="{user}" flipTime="{room.flipTime}" isDarkMode="{isDarkMode}" lang="{lang}" players="{room.players}" reveal state="{room.state}" the this: with/>
+                </div>
+              ​  {room.state === 'playing' && isHost && (
+                <div className="flex-shrink-0 mt-4 mb-2 max-w-3xl mx-auto w-full">
+                {/* Generates a future target timestamp (1.5s ahead) so all devices flip on the exact same millisecond */}
+                <button onClick={() => updateDoc(doc(db, 'rooms', roomId), { state: 'revealed', flipTime: Date.now() + 1500 })} className="bg-blue-600 text-white font-bold py-4 rounded-xl text-xl w-full shadow-lg active:scale-95 transition-transform">
+                {lang === 'TH' ? 'เปิดไพ่' : 'Reveal Cards'}
+                </button>
+                </div>
+)}
 
               {room.state === 'revealed' && (
                  <div className="flex-shrink-0 mt-4 mb-2 bg-black/60 p-4 rounded-3xl backdrop-blur-md w-full max-w-3xl mx-auto space-y-3 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
