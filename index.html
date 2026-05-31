@@ -4,14 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>คำต้องห้าม</title>
-  <link href="[https://fonts.googleapis.com/css2?family=Kanit:wght@800&display=swap](https://fonts.googleapis.com/css2?family=Kanit:wght@800&display=swap)" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@800&display=swap" rel="stylesheet">
   
-  <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-  
-  <script crossorigin src="[https://unpkg.com/react@18/umd/react.production.min.js](https://unpkg.com/react@18/umd/react.production.min.js)"></script>
-  <script crossorigin src="[https://unpkg.com/react-dom@18/umd/react-dom.production.min.js](https://unpkg.com/react-dom@18/umd/react-dom.production.min.js)"></script>
-  
-  <script src="[https://unpkg.com/@babel/standalone/babel.min.js](https://unpkg.com/@babel/standalone/babel.min.js)"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     body { font-family: 'Kanit', sans-serif; background-color: #000; overscroll-behavior-y: none; }
@@ -21,13 +19,10 @@
   <div id="root"></div>
 
   <script type="text/babel" data-type="module">
-    import { initializeApp } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js)";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js)";
-    import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "[https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js](https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js)";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // ==========================================
-    // ⚠️ EDIT THIS SECTION: PUT YOUR FIREBASE CONFIG HERE
-    // ==========================================
     const firebaseConfig = {
       apiKey: "AIzaSyBhl1a_B7UBOjNiktGRCuKMEBAtbMr2YC4",
       authDomain: "dsit-deba3.firebaseapp.com",
@@ -36,7 +31,6 @@
       messagingSenderId: "500208903268",
       appId: "1:500208903268:web:2396c75019196a09b66b71"
     };
-    // ==========================================
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -106,7 +100,6 @@
       }
     };
 
-    // --- COMPONENTS ---
     const BackgroundWrapper = ({ children }) => (
       <div className="relative h-[100dvh] w-screen overflow-hidden bg-gray-900 select-none">
         <div 
@@ -252,7 +245,6 @@
        const wordColor = isDarkMode ? 'text-white' : 'text-black';
        const shadowColor = isDarkMode ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0.2)';
 
-       // Time-synced flip based on host command + 1500ms network buffer
        const [syncedFlip, setSyncedFlip] = useState(false);
        useEffect(() => {
           if (state === 'revealed') {
@@ -275,7 +267,6 @@
                    <div key={p.uid} className={`${itemClass} [perspective:1500px]`}>
                       <div className={`relative w-full h-full max-h-[100%] max-w-[220px] sm:max-w-[260px] aspect-[2.5/3.5] mx-auto transition-transform duration-700 [transform-style:preserve-3d] ${isFlipped ? '[transform:rotateY(180deg)]' : '[transform:rotateY(0deg)]'}`}>
                          
-                         {/* FRONT OF CARD */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
                               style={{ 
@@ -292,7 +283,6 @@
                             {isMe && <span className="absolute bottom-4 text-xs font-bold text-yellow-700 bg-yellow-100 px-3 py-1 rounded-full z-10 shadow">{lang === 'TH' ? 'คุณ' : 'You'}</span>}
                          </div>
 
-                         {/* BACK OF CARD */}
                          <div 
                               className={`absolute inset-0 flex flex-col items-center justify-center p-4 border-4 rounded-3xl ${isMe ? 'border-yellow-400' : ''} ${cardBg}`}
                               style={{ 
@@ -325,7 +315,6 @@
        );
     };
 
-    // --- MAIN APP ---
     function App() {
       const [user, setUser] = useState(null);
       const [nickname, setNickname] = useState(() => localStorage.getItem('nickname') || '');
@@ -461,7 +450,7 @@
               <h1 className="text-6xl font-black text-white mb-1 tracking-wider">
                 {lang === 'TH' ? 'คำต้องห้าม' : 'Taboo'}
               </h1>
-              <p className="text-gray-600 text-[10px] font-bold mb-6 tracking-widest uppercase">dsi v0.9 bug fixed</p>
+              <p className="text-gray-600 text-[10px] font-bold mb-6 tracking-widest uppercase">dsi v0.9.1</p>
               
               <div className="w-full bg-black/60 p-6 rounded-3xl backdrop-blur-md shadow-2xl">
                 <input 
