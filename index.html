@@ -463,8 +463,8 @@
                 <div className="mb-8">
                   <p className="text-gray-300 text-center font-bold mb-3">{lang === 'TH' ? 'เลือกห้อง' : 'Select Room'}</p>
                   <div className="flex space-x-3 justify-center">
-                    {['A', 'B', 'C', 'D'].map(char => (
-                      <button key={char} onClick={() => setRoomCodeInput(char)} className={`w-14 h-14 rounded-full font-black text-2xl transition-all ${roomCodeInput === char ? 'bg-yellow-400 text-black scale-110 shadow-lg' : 'bg-gray-700 text-white'}`}>{char}</button>
+                    {['1', '2', '3', '4'].map(num => (
+                      <button key={num} onClick={() => setRoomCodeInput(num)} className={`w-14 h-14 rounded-full font-black text-2xl transition-all ${roomCodeInput === num ? 'bg-yellow-400 text-black scale-110 shadow-lg' : 'bg-gray-700 text-white'}`}>{num}</button>
                     ))}
                   </div>
                 </div>
